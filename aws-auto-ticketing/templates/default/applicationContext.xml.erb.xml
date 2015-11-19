@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:cache="http://www.springframework.org/schema/cache"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:task="http://www.springframework.org/schema/task"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/cache
+        http://www.springframework.org/schema/cache/spring-cache.xsd
+        http://www.springframework.org/schema/task
+        http://www.springframework.org/schema/task/spring-task.xsd">
+
+    <!-- annotation --> 
+    <context:component-scan base-package="com.trendmicro.dcs.autoticketing" />
+
+    <!-- ========== cache ========== -->
+    <cache:annotation-driven/>
+    <bean class="com.trendmicro.dcs.autoticketing.cache.JiraFieldsCache" id="cache" />
+    <!-- generic cache manager -->
+    <bean class="org.springframework.cache.support.SimpleCacheManager" id="cacheManager">  
+        <property name="caches">
+            <set>
+                <bean class="org.springframework.cache.concurrent.ConcurrentMapCacheFactoryBean" p:name="customFields"/>
+            </set>
+        </property>
+    </bean>
+    
+	<!-- ========== Constant Declaration ========== -->
+	
+	<!-- Queue name of SQS queue -->
+	<bean id="queueName" class="java.lang.String">
+		<constructor-arg value="<%= @EventQueueName %>" />
+	</bean>
+	
+	<!-- Index name in table -->
+	<bean id="indexName" class="java.lang.String">
+		<constructor-arg value="Handled-EventDateTime-index" />
+	</bean>
+	
+	<!-- Index name for query corresponding alarm  -->
+	<bean id="queryIndexName" class="java.lang.String">
+		<constructor-arg value="Type-index" />
+	</bean>
+
+	
+	<!-- Mail host for sending warning e-mail -->
+	<bean id="mail_host" class="java.lang.String">
+		<constructor-arg value="<%= @HostMailAddress %>" />
+	</bean>
+	
+	<!-- Mail from for sending warning e-mail -->
+	<bean id="mail_from" class="java.lang.String">
+		<constructor-arg value="<%= @FromMailAddress %>" />
+	</bean>
+	
+	<!-- Recipient for sending warning e-mail -->
+	<bean id="recipient" class="java.lang.String">
+		<!-- <constructor-arg value="dcsrddevteam@trendmicro.com" /> -->
+		<constructor-arg value="<%= @RecipientMailAddress %>" />
+	</bean>
+	
+	<!-- P1 ARN -->
+	<bean id="P1_ARN" class="java.lang.String">
+		<constructor-arg value="<%= @P1_ARN %>" />
+	</bean>
+	
+	<!-- P2 ARN -->
+	<bean id="P2_ARN" class="java.lang.String">
+		<constructor-arg value="<%= @P2_ARN %>" />
+	</bean>
+	
+	<!-- ========== Components Declaration ========== -->
+	
+	<!-- EventReceiver: The event receiver object for receiving messages from SQS queue. -->
+	<bean id="eventReceiver" class="com.trendmicro.dcs.autoticketing.event.EventReceiver" init-method="init">
+		<constructor-arg value="EventReceiver" /> <!-- Thread Name -->
+		<property name="visibilityTimeout" value="15" />
+		<property name="waitTimeSeconds" value="10" />
+	</bean>
+	
+	<!-- SqsClient: for receiving messages from SQS queue. -->
+	<bean id="sqsClient" class="com.amazonaws.services.sqs.AmazonSQSClient" />
+	<bean id="sqsClient_setting_region" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetObject" ref="sqsClient" />
+		<property name="targetMethod" value="configureRegion" />
+		<property name="arguments">
+			<list>
+				<value>US_WEST_1</value> <!-- set Region -->
+			</list>
+		</property>
+	</bean>
+
+	<bean id="eventProcessor" class="com.trendmicro.dcs.autoticketing.event.EventProcessor">
+		<constructor-arg value="EventProcessor" /> <!-- Thread Name -->
+	</bean>
+	
+	<!-- StorageService: Service API, used for dispatch the storage command to corresponding Actions. -->
+	<bean id="storageService" class="com.trendmicro.dcs.autoticketing.storage.StorageService" />
+	
+	<!-- ExecutorService: Thread pool for handling/saving sqs messages. -->
+	<bean id="saveDynamoDBExecutorService" class="java.util.concurrent.Executors" factory-method="newFixedThreadPool">
+		<constructor-arg type="int" value="1" /> <!-- Max size of concurrent threads in thread pool. -->
+	</bean>
+	
+	<!-- ========== JIRA Actions ========== -->
+	
+	<!-- CreateTicketAction: An action for creating JIRA tickets. -->
+	<bean id="createTicketAction" class="com.trendmicro.dcs.autoticketing.jira.CreateTicketAction" />
+	
+	<!-- LeaveCommentAction: An action for leaving comments. -->
+	<bean id="leaveCommentAction" class="com.trendmicro.dcs.autoticketing.jira.LeaveCommentAction" />
+	
+	<!-- SendWarningEmailAction: An action for sending warning emamil. -->
+	<bean id="sendWarningEmailAction" class="com.trendmicro.dcs.autoticketing.jira.SendWarningEmailAction" />
+	
+	<!-- ========== DynamoDB Actions ========== -->
+	
+	<!-- PutItemAction: Action that is used to store message onto DynamoDB. -->
+	<bean id="putItemAction" class="com.trendmicro.dcs.autoticketing.dao.PutItemAction" />
+	
+	<!-- ScanItemAction: Action that is used to scan messages from DynamoDB. -->
+	<bean id="scanItemAction" class="com.trendmicro.dcs.autoticketing.dao.ScanItemAction" />
+	
+	<!-- QueryAlarmAction: Action taht is used to query messages from DynamoDB. -->
+	<bean id="queryAlarmAction" class="com.trendmicro.dcs.autoticketing.dao.QueryAlarmAction" />
+	
+	<!-- UpdateItemAction: Action that is used to update message (Handled) to DynamoDB. -->
+	<bean id="updateItemAction" class="com.trendmicro.dcs.autoticketing.dao.UpdateItemAction" />
+	
+	<!-- UpdateTicketCreationAction: Action that is used to update message and add TicketKey to DynamoDB. -->
+	<bean id="updateTicketCreationAction" class="com.trendmicro.dcs.autoticketing.dao.UpdateTicketCreationAction" />
+	
+	<!-- DeleteItemAction: Action that is used to delete message from DynamoDB -->
+	<bean id="deleteItemAction" class="com.trendmicro.dcs.autoticketing.dao.DeleteItemAction" />
+
+	<!-- DeleteUnknownItemAction: Action that is used to delete unknwon message from DynamoDB -->
+	<bean id="deleteUnknownItemAction" class="com.trendmicro.dcs.autoticketing.dao.DeleteUnknownItemAction" />
+	
+	<!-- UpdateUnknownAction: Action that is used to update message to be UNKNOWN from DynamoDB -->
+	<bean id="updateUnknownItemAction" class="com.trendmicro.dcs.autoticketing.dao.UpdateUnknownItemAction" />
+	
+	<!-- ========== AWS API Objects ========== -->	
+	
+	<!-- DynamoDB: AWS DynamoDB objects, which is used for accessing DynamoDB directly. Only be used in StorageService. -->
+	<bean id="DynamoDB" class="com.amazonaws.services.dynamodbv2.document.DynamoDB">
+		<constructor-arg type="com.amazonaws.services.dynamodbv2.AmazonDynamoDB" ref="dynamoDBClient" />
+	</bean>
+	
+	<!-- Transformers -->
+	
+	<!-- Transformer: From SQS message to JSON message. -->
+	<bean id="SqsMessageToJsonTransformer" class="com.trendmicro.dcs.autoticketing.transformer.SqsMessageToJsonTransformer" />
+	
+	<!-- Transformer: From Item of DynamoDB to Event object -->
+	<bean id="itemToEventTransformer" class="com.trendmicro.dcs.autoticketing.transformer.ItemToEventTransformer" />
+	
+	<!-- Transformer: From Event to CreateTicketBean object -->
+	<bean id="EventToCreateTicketBeanTransformer" class="com.trendmicro.dcs.autoticketing.transformer.EventToCreateTicketBeanTransformer" />
+	
+	<!-- Transformer: From Event to RecoveryBean object -->
+	<bean id="EventToRecoveryBeanTransformer" class="com.trendmicro.dcs.autoticketing.transformer.EventToRecoveryBeanTransformer" />
+	
+	<!-- scheduler -->
+	<bean id="cacheScheduler" class="com.trendmicro.dcs.autoticketing.cache.CacheScheduler" />
+	<task:annotation-driven executor="taskExecutor" scheduler="taskScheduler"/>
+    <task:scheduler id="taskScheduler" pool-size="1"/>
+    <task:executor id="taskExecutor" pool-size="1"/>
+    
+    <!-- http -->
+    <bean id="httpCreateTicketTask" class="com.trendmicro.dcs.autoticketing.http.HttpCreateTicketTask" init-method="init" />
+    <bean id="httpLeaveCommentTask" class="com.trendmicro.dcs.autoticketing.http.HttpLeaveCommentTask" init-method="init" />
+    <bean id="httpLogInTask" class="com.trendmicro.dcs.autoticketing.http.HttpLogInTask" init-method="init" />
+    <bean id="httpQueryAllFieldsTask" class="com.trendmicro.dcs.autoticketing.http.HttpQueryAllFieldsTask" init-method="init" />
+    
+    <!-- <bean id="httpTest" class="com.trendmicro.dcs.autoticketing.test.HttpTest" /> -->
+    
+    <beans profile="development">
+    	<!-- Table name in DynamoDB -->
+		<bean id="tableName" class="java.lang.String">
+			<constructor-arg value="<%= @DynamoDbTableName %>" />
+		</bean>
+		
+		<!-- JIRA URL -->
+		<bean id="jiraUrl" class="java.lang.String">
+			<constructor-arg value="<%= @JIRA_URL %>" />
+		</bean>
+		
+		<!-- JIRA username -->
+		<bean id="jira_username" class="java.lang.String">
+			<constructor-arg value="<% = @JIRA_USERNAME %>" />
+		</bean>
+		
+		<!-- JIRA password -->
+		<bean id="jira_password" class="java.lang.String">
+			<constructor-arg value="<%= @JIRA_PASSWORD >" />
+		</bean>
+		
+		<!-- DynamoDBClient: AWS DynamoDBClient object. Only used for DynamoDB object internally. -->
+		<bean id="dynamoDBClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" />
+		<bean id="dynamoDBClient_setting_region" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+			<property name="targetObject" ref="dynamoDBClient" />
+			<property name="targetMethod" value="configureRegion" />
+			<property name="arguments">
+				<list>
+					<value>US_WEST_1</value>
+				</list>
+			</property>
+		</bean>
+    </beans>
+    
+    <beans profile="production">
+		<!-- Table name in DynamoDB -->
+		<bean id="tableName" class="java.lang.String">
+			<constructor-arg value="<%= @DynamoDbTableName %>" />
+		</bean>
+
+		<!-- JIRA URL -->
+		<bean id="jiraUrl" class="java.lang.String">
+			<constructor-arg value="<%= @JIRA_URL %>" />
+		</bean>
+		
+		<!-- JIRA username -->
+		<bean id="jira_username" class="java.lang.String">
+			<constructor-arg value="<%= @JIRA_USERNAME %>" />
+		</bean>
+		
+		<!-- JIRA password -->
+		<bean id="jira_password" class="java.lang.String">
+			<constructor-arg value="<%= @JIRA_PASSWORD %>" />
+		</bean>
+		
+		<!-- DynamoDBClient: AWS DynamoDBClient object. Only used for DynamoDB object internally. -->
+		<bean id="dynamoDBClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" />
+		<bean id="dynamoDBClient_setting_region" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+			<property name="targetObject" ref="dynamoDBClient" />
+			<property name="targetMethod" value="configureRegion" />
+			<property name="arguments">
+				<list>
+					<value>US_WEST_1</value>
+				</list>
+			</property>
+		</bean>
+    </beans>
+</beans>
