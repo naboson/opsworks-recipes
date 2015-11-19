@@ -181,9 +181,7 @@
     <bean id="httpLogInTask" class="com.trendmicro.dcs.autoticketing.http.HttpLogInTask" init-method="init" />
     <bean id="httpQueryAllFieldsTask" class="com.trendmicro.dcs.autoticketing.http.HttpQueryAllFieldsTask" init-method="init" />
     
-    <!-- <bean id="httpTest" class="com.trendmicro.dcs.autoticketing.test.HttpTest" /> -->
-    
-    <beans profile="development">
+
     	<!-- Table name in DynamoDB -->
 		<bean id="tableName" class="java.lang.String">
 			<constructor-arg value="<%= @DynamoDbTableName %>" />
@@ -215,39 +213,4 @@
 				</list>
 			</property>
 		</bean>
-    </beans>
-    
-    <beans profile="production">
-		<!-- Table name in DynamoDB -->
-		<bean id="tableName" class="java.lang.String">
-			<constructor-arg value="<%= @DynamoDbTableName %>" />
-		</bean>
-
-		<!-- JIRA URL -->
-		<bean id="jiraUrl" class="java.lang.String">
-			<constructor-arg value="<%= @JIRA_URL %>" />
-		</bean>
-		
-		<!-- JIRA username -->
-		<bean id="jira_username" class="java.lang.String">
-			<constructor-arg value="<%= @JIRA_USERNAME %>" />
-		</bean>
-		
-		<!-- JIRA password -->
-		<bean id="jira_password" class="java.lang.String">
-			<constructor-arg value="<%= @JIRA_PASSWORD %>" />
-		</bean>
-		
-		<!-- DynamoDBClient: AWS DynamoDBClient object. Only used for DynamoDB object internally. -->
-		<bean id="dynamoDBClient" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient" />
-		<bean id="dynamoDBClient_setting_region" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-			<property name="targetObject" ref="dynamoDBClient" />
-			<property name="targetMethod" value="configureRegion" />
-			<property name="arguments">
-				<list>
-					<value>US_WEST_1</value>
-				</list>
-			</property>
-		</bean>
-    </beans>
 </beans>
