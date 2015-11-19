@@ -196,12 +196,12 @@
 		
 		<!-- JIRA username -->
 		<bean id="jira_username" class="java.lang.String">
-			<constructor-arg value="<% = @JIRA_USERNAME %>" />
+			<constructor-arg value="<%= @JIRA_USERNAME %>" />
 		</bean>
 		
 		<!-- JIRA password -->
 		<bean id="jira_password" class="java.lang.String">
-			<constructor-arg value="<%= @JIRA_PASSWORD >" />
+			<constructor-arg value="<%= @JIRA_PASSWORD %>" />
 		</bean>
 		
 		<!-- DynamoDBClient: AWS DynamoDBClient object. Only used for DynamoDB object internally. -->
