@@ -20,3 +20,8 @@ template '/opt/aws-auto-ticketing/conf/applicationContext.xml' do
         :JIRA_PASSWORD => node['JIRA_PASSWORD']
 	})
 end
+
+execute 'run auto-ticketing' do
+    command 'bash /opt/aws-auto-ticketing/run.sh'
+    action :run
+end
