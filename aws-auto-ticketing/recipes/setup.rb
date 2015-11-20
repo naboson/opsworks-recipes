@@ -22,7 +22,8 @@ template '/opt/aws-auto-ticketing/conf/applicationContext.xml' do
 end
 
 bash 'run auto-ticketing' do
-    cwd ::File.dirname('/opt/aws-auto-ticketing/')
+    user 'root'
+    cwd '/opt/aws-auto-ticketing/'
     code <<-EOH
         ./run.sh
     EOH
