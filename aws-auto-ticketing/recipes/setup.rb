@@ -22,7 +22,7 @@ template '/opt/aws-auto-ticketing/conf/applicationContext.xml' do
 end
 
 execute 'cd to auto-ticketing' do
-    command 'cd /opt/aws-auto-ticketing'
+    command 'cd /opt/aws-auto-ticketing/'
     action :run
 end
 
