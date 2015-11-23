@@ -25,6 +25,6 @@ bash 'run auto-ticketing' do
     user 'root'
     cwd '/opt/aws-auto-ticketing/'
     code <<-EOH
-        ./run.sh &
+        sh ./run.sh &
     EOH
 end
