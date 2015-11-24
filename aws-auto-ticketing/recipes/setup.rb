@@ -1,5 +1,5 @@
 cookbook_file '/opt/aws-auto-ticketing/lib/auto-ticketing-agent.jar' do
-    source 'auto-ticketing-agent.jar'
+    source 'AutoTicketingAgent-0.1.jar'
     owner 'root'
     group 'root'
     mode '0755'
