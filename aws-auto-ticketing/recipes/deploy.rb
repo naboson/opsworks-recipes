@@ -13,8 +13,7 @@ template '/opt/aws-auto-ticketing/conf/applicationContext.xml' do
         :FromMailAddress => node['FromMailAddress'],
         :HostMailAddress => node['HostMailAddress'],
         :RecipientMailAddress => node['RecipientMailAddress'],
-        :P1_ARN => node['P1_ARN'],
-        :P2_ARN => node['P2_ARN'],
+        :slackToken => node['slackToken'],
         :JIRA_URL => node['JIRA_URL'],
         :JIRA_USERNAME => node['JIRA_USERNAME'],
         :JIRA_PASSWORD => node['JIRA_PASSWORD']

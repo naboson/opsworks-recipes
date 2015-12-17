@@ -68,14 +68,14 @@
 		<constructor-arg value="<%= @RecipientMailAddress %>" />
 	</bean>
 	
-	<!-- P1 ARN -->
-	<bean id="P1_ARN" class="java.lang.String">
-		<constructor-arg value="<%= @P1_ARN %>" />
+	<!-- Slack API URL -->
+	<bean id="slackUrl" class="java.lang.String">
+		<constructor-arg value="https://slack.com/api/" />
 	</bean>
 	
-	<!-- P2 ARN -->
-	<bean id="P2_ARN" class="java.lang.String">
-		<constructor-arg value="<%= @P2_ARN %>" />
+	<!-- Slack Token -->
+	<bean id="slackToken" class="java.lang.String">
+		<constructor-arg value="<%= @slackToken %>" />
 	</bean>
 	
 	<!-- ========== Components Declaration ========== -->
@@ -169,6 +169,9 @@
 	<!-- Transformer: From Event to RecoveryBean object -->
 	<bean id="EventToRecoveryBeanTransformer" class="com.trendmicro.dcs.autoticketing.transformer.EventToRecoveryBeanTransformer" />
 	
+	<!-- Transformer: From Event to SlackMessageBean -->
+	<bean id="EventToSlackBeanTransformer" class="com.trendmicro.dcs.autoticketing.transformer.EventToSlackBeanTransformer" />
+
 	<!-- scheduler -->
 	<bean id="cacheScheduler" class="com.trendmicro.dcs.autoticketing.cache.CacheScheduler" />
 	<task:annotation-driven executor="taskExecutor" scheduler="taskScheduler"/>
@@ -181,6 +184,7 @@
     <bean id="httpLogInTask" class="com.trendmicro.dcs.autoticketing.http.HttpLogInTask" init-method="init" />
     <bean id="httpQueryAllFieldsTask" class="com.trendmicro.dcs.autoticketing.http.HttpQueryAllFieldsTask" init-method="init" />
     
+    <bean id="slackHttpClientHelper" class="com.trendmicro.dcs.autoticketing.util.SlackHttpClientHelper" init-method="init" />
 
     	<!-- Table name in DynamoDB -->
 		<bean id="tableName" class="java.lang.String">
@@ -212,5 +216,14 @@
 					<value>US_WEST_1</value>
 				</list>
 			</property>
+		</bean>
+
+		<!-- Notification Switches -->
+		<bean id="switch_jira" class="java.lang.String">
+			<constructor-arg value="on" />
+		</bean>
+		
+		<bean id="switch_slack" class="java.lang.String">
+			<constructor-arg value="on" />
 		</bean>
 </beans>
